@@ -9,7 +9,6 @@ The data comes from [oodavid/iso-3166-2](https://github.com/oodavid/iso-3166-2).
 ```bash
 git submodule init
 git submodule update
-
 ```
 #### Install NodeJS dependencies ####
 ```bash
