@@ -1,34 +1,58 @@
 var fs = require("fs");
 
-var iso_3166_2 = require("./data/iso_3166_2.js");
+var deleteFolderRecursive = function(path) {
+    var files = [];
+    if( fs.existsSync(path) ) {
+        files = fs.readdirSync(path);
+        files.forEach(function(file,index){
+            var curPath = path + "/" + file;
+            if(fs.lstatSync(curPath).isDirectory()) { // recurse
+                deleteFolderRecursive(curPath);
+            } else { // delete file
+                fs.unlinkSync(curPath);
+            }
+        });
+        fs.rmdirSync(path);
+    }
+};
+
+eval(fs.readFileSync('./iso-3166-2/iso_3166_2.js', 'utf8'));
 
 var countries = {};
-
 var divisions = {};
 
 for(var key in iso_3166_2) {
   var elem = iso_3166_2[key];
-  if(elem.division == "country") {
-    countries[elem.code] = elem;
+  switch(elem.division) {
+    case "country":
+      countries[elem.code] = elem;
+      break;
+    case "planet":
+      break;
+    case "continent":
+      break;
+    default:
+      if (typeof divisions[elem.parent] == "undefined") {
+        divisions[elem.parent] = {};
+      }
+      divisions[elem.parent][elem.code] = elem;
   }
-  else if(elem.division != "country") {
-    if (typeof divisions[elem.parent] == "undefined") {
-      divisions[elem.parent] = {};
+}
+
+deleteFolderRecursive("data");
+
+fs.mkdir("data", function () {
+  var countriesString = JSON.stringify(countries, null, 2);
+  fs.writeFile("data/countries.json", countriesString);
+
+  fs.mkdir("data/divisions", function() {
+    for(var key in divisions) {
+      var elem = divisions[key];
+      var divisionsString = JSON.stringify(elem, null, 2);
+      console.log(key);
+      fs.writeFile("data/divisions/" + key + ".json", divisionsString);
     }
-    divisions[elem.parent][elem.code] = elem;
-  }
-}
 
-fs.mkdirSync("divisions");
-
-var countriesString = JSON.stringify(countries, null, 2);
-fs.writeFile("countries.json", countriesString);
-
-for(var key in divisions) {
-  var elem = divisions[key];
-  var divisionsString = JSON.stringify(elem, null, 2);
-  console.log(key);
-  fs.writeFile("divisions/" + key + ".json", divisionsString);
-}
-
-console.log("Done");
+    console.log("Done");
+  });
+});
